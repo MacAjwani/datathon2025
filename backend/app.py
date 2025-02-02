@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import numpy as np
 import joblib
 import xgboost as xgb
@@ -10,26 +11,39 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
+CORS(app, resources={r"/predict": {"origins": "https://www.imdb.com"}})
 model = joblib.load("xgb_model.pkl")
+df = pd.read_csv("mv_det.csv")
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.json
-        x = assemble_input_vector(data.get("rating_x"), data.get("review"), data.get("duration_str"), data.get("rating_y"), data.get("genres_str"), data.get("review_date"), data.get("release_date"), data.get("synopsis_text"))
+        movie_id, review_date, review_rating, review = data.get("movieID"), data.get("date"), data.get("rating"), data.get("reviewText")
+
+        movie_rows = df.loc[df['movie_id'] == movie_id]
+        if movie_rows.empty:
+            return jsonify({"error": f"Movie with movie_id {movie_id} not found."}), 404
+        
+        movie_row = movie_rows.iloc[0]
+        movie_rating = movie_row['rating']
+        duration = movie_row['duration']
+        genres_str = movie_row['genre']
+        release_date = movie_row['release_date']
+        synopsis_text = movie_row['plot_synopsis']
+
+        x = assemble_input_vector(movie_rating, review, duration, review_rating, genres_str, review_date, release_date, synopsis_text)
         prediction = model.predict_proba(x.reshape(1, -1))
-        print(prediction)
         spoiler_prob = prediction[0][1]
-        threshold = 0.20
+        threshold = 0.23
         return jsonify({"prediction": 1 if spoiler_prob >= threshold else 0})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def assemble_input_vector(rating_x, review, duration_str, rating_y, genres_str, review_date, release_date, synopsis_text):
+def assemble_input_vector(rating_x, review, duration, rating_y, genres_str, review_date, release_date, synopsis_text):
     splr_word = 1 if has_splr_wrd(review) else 0
     word_count = len(review.split())
-    duration = parse_duration(duration_str)
     genres = parse_genres(genres_str)
     time_diff = find_time_diff(review_date, release_date) 
     similarity_diff = compute_similarity(review, synopsis_text)  

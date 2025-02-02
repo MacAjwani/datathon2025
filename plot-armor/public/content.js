@@ -1,57 +1,79 @@
-console.log("PlotArmor content script running...");
-
-// Function to extract movie ID from the URL
 function getMovieID() {
-  const match = window.location.href.match(/tt\d+/);
-  return match ? match[0] : "Unknown";
+	const match = window.location.href.match(/tt\d+/);
+	return match ? match[0] : "Unknown";
 }
 
-// Function to extract review ratings from span class="ipc-rating-star--rating"
-function getReviewerRating(reviewContainer) {
-  console.log("Reviewer Rating");
-  console.log(reviewContainer);
-  const ratingElement = reviewContainer.querySelector("span.ipc-rating-star--rating");
-  return ratingElement ? ratingElement.innerText.trim() : "N/A";
+async function blurReviews() {
+	const blurList = await extractReviews();
+	console.log("Blur List:", blurList);
+	const reviews = document.querySelectorAll(
+		'div.ipc-html-content-inner-div[role="presentation"]'
+	);
+	reviews.forEach((review, index) => {
+		if (blurList[index] === 1) {
+			review.style.filter = "blur(5px)";
+		}
+	});
 }
 
-// Function to extract review details
-function extractReviews() {
-  const reviews = document.querySelectorAll('div.ipc-html-content-inner-div[role="presentation"]');
-  const extractedData = [];
-
-  reviews.forEach((review) => {
-    const reviewContainer = review.closest('div.sc-8c7aa573-4'); // Get the closest parent container
-    console.log("Review: ", review.children);
-    // Get review text
-    const reviewText = review.innerText.trim();
-
-    // Get review rating using the updated selector
-    const reviewerRating = reviewContainer ? getReviewerRating(reviewContainer) : "N/A";
-
-    // Get review date
-    const dateElement = reviewContainer?.querySelector('.review-date');
-    const reviewDate = dateElement ? dateElement.innerText.trim() : "N/A";
-
-    // Get movie ID and rating
-    const movieID = getMovieID();
-
-    // Store extracted review data
-    extractedData.push({
-      movieID,
-      reviewerRating,
-      reviewDate,
-      reviewText
-    });
-  });
-
-    console.log("Reviews: ", reviews);
-  console.log("Extracted Review Data:", extractedData);
-  return extractedData;
+async function extractReviews() {
+	const extractedData = [];
+	const reviewCards = document.querySelectorAll(".ipc-list-card__content");
+	const movieID = getMovieID();
+	for (const card of reviewCards) {
+		const ratingElement = card.querySelector(
+			".ipc-rating-star--otherUserAlt"
+		);
+		let rating = -1;
+		if (ratingElement) {
+			const ariaLabel = ratingElement.getAttribute("aria-label");
+			const labelLength = ariaLabel.length;
+			let ratingStr =
+				ariaLabel.charAt(labelLength - 2) !== " "
+					? ariaLabel.slice(labelLength - 2)
+					: ariaLabel.charAt(labelLength - 1);
+			rating = Number(ratingStr);
+		}
+		const reviewTextElement = card.querySelector(
+			".ipc-html-content-inner-div"
+		);
+		const reviewText = reviewTextElement
+			? reviewTextElement.innerText.trim()
+			: "No review text found";
+		const dateElement = document.querySelector(".review-date");
+		let date = "";
+		if (dateElement) {
+			date = dateElement.textContent.trim();
+		} else {
+			console.log("Date element not found.");
+		}
+		try {
+			const response = await fetch("http://127.0.0.1:5000/predict", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					movieID: movieID,
+					date: date,
+					rating: rating,
+					reviewText: reviewText,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! Status: ${response.status}`);
+			}
+			const data = await response.json();
+			console.log("Response data:", data);
+			extractedData.push(data.prediction);
+		} catch (error) {
+			console.error("Error:", error);
+			extractedData.push(0);
+		}
+	}
+	return extractedData;
 }
 
-// Run function when page loads
-extractReviews();
-
-// Observer to check for new reviews that load dynamically
-const observer = new MutationObserver(extractReviews);
-observer.observe(document.body, { childList: true, subtree: true });
+(async function init() {
+	await blurReviews();
+})();
