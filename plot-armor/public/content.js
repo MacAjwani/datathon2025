@@ -1,45 +1,57 @@
 console.log("PlotArmor content script running...");
 
-// Function to blur review text
-function blurReviews() {
-  const reviews = document.querySelectorAll(".text.show-more__control"); // IMDb review text class
+// Function to extract movie ID from the URL
+function getMovieID() {
+  const match = window.location.href.match(/tt\d+/);
+  return match ? match[0] : "Unknown";
+}
+
+// Function to extract review ratings from span class="ipc-rating-star--rating"
+function getReviewerRating(reviewContainer) {
+  console.log("Reviewer Rating");
+  console.log(reviewContainer);
+  const ratingElement = reviewContainer.querySelector("span.ipc-rating-star--rating");
+  return ratingElement ? ratingElement.innerText.trim() : "N/A";
+}
+
+// Function to extract review details
+function extractReviews() {
+  const reviews = document.querySelectorAll('div.ipc-html-content-inner-div[role="presentation"]');
+  const extractedData = [];
+
   reviews.forEach((review) => {
-    review.style.filter = "blur(5px)"; // Apply blur effect
-    review.style.transition = "filter 0.3s ease-in-out";
+    const reviewContainer = review.closest('div.sc-8c7aa573-4'); // Get the closest parent container
+    console.log("Review: ", review.children);
+    // Get review text
+    const reviewText = review.innerText.trim();
 
-    // Add a "Show Review" button
-    if (!review.parentElement.querySelector(".show-review-btn")) {
-      const button = document.createElement("button");
-      button.innerText = "Show Review";
-      button.classList.add("show-review-btn");
-      button.style.marginTop = "5px";
-      button.style.cursor = "pointer";
-      button.style.background = "#50CBDE";
-      button.style.border = "none";
-      button.style.padding = "5px 10px";
-      button.style.color = "white";
-      button.style.borderRadius = "5px";
-      button.style.fontSize = "14px";
-      
-      // Toggle blur when button is clicked
-      button.addEventListener("click", () => {
-        if (review.style.filter === "blur(5px)") {
-          review.style.filter = "none"; // Remove blur
-          button.innerText = "Hide Review";
-        } else {
-          review.style.filter = "blur(5px)";
-          button.innerText = "Show Review";
-        }
-      });
+    // Get review rating using the updated selector
+    const reviewerRating = reviewContainer ? getReviewerRating(reviewContainer) : "N/A";
 
-      review.parentElement.appendChild(button);
-    }
+    // Get review date
+    const dateElement = reviewContainer?.querySelector('.review-date');
+    const reviewDate = dateElement ? dateElement.innerText.trim() : "N/A";
+
+    // Get movie ID and rating
+    const movieID = getMovieID();
+
+    // Store extracted review data
+    extractedData.push({
+      movieID,
+      reviewerRating,
+      reviewDate,
+      reviewText
+    });
   });
+
+    console.log("Reviews: ", reviews);
+  console.log("Extracted Review Data:", extractedData);
+  return extractedData;
 }
 
 // Run function when page loads
-blurReviews();
+extractReviews();
 
-// Run again if new reviews load dynamically
-const observer = new MutationObserver(blurReviews);
+// Observer to check for new reviews that load dynamically
+const observer = new MutationObserver(extractReviews);
 observer.observe(document.body, { childList: true, subtree: true });
