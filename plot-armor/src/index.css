@@ -1,68 +1,70 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
 body {
-  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.popup-container {
+  width: 24rem; /* 80px */
+  padding: 1rem;
+  background-color: white;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.popup-header {
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.popup-logo {
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.5rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+.popup-title {
+  font-size: 1.5rem; /* text-xl */
+  font-weight: bold;
+}
+
+.plot-text {
+  color: #50CBDE;
+  font-weight: bold;
+}
+
+.bold-text {
+  font-weight: bold;
+}
+
+.popup-info {
+  color: black; /* gray-700 */
+  font-size: 1.125rem;
+}
+
+.popup-stats {
+  margin-top: 0.5rem;
+  font-size: 1.125rem; /* text-lg */
+}
+
+.popup-button {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background-color: #E5E7EB;
+  color: black;
+  border: none;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.popup-button.paused {
+  background-color: #9CA3AF;
+  color: #374151;
 }
